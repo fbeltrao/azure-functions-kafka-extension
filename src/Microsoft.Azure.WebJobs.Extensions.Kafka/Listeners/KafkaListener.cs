@@ -41,6 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
         private bool disposed;
         private CancellationTokenSource cancellationTokenSource;
         private SemaphoreSlim subscriberFinished;
+        KafkaTopicScaler<TKey, TValue> topicScaler;
 
         /// <summary>
         /// Gets the value deserializer
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                 (FunctionExecutorBase<TKey, TValue>)new SingleItemFunctionExecutor<TKey, TValue>(executor, consumer, this.options.ExecutorChannelCapacity, this.options.ChannelFullRetryIntervalInMs, commitStrategy, logger) :
                 new MultipleItemFunctionExecutor<TKey, TValue>(executor, consumer, this.options.ExecutorChannelCapacity, this.options.ChannelFullRetryIntervalInMs, commitStrategy, logger);
 
+            topicScaler = new KafkaTopicScaler<TKey, TValue>(this.listenerConfiguration.Topic, this.logger, consumer, new AdminClientConfig(GetConsumerConfiguration()));
             consumer.Subscribe(this.listenerConfiguration.Topic);
 
             // Using a thread as opposed to a task since this will be long running
@@ -231,6 +233,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
                     {
                         try
                         {
+#if DEBUG
+                            // For testing, printing the current lag
+                            topicScaler?.ReportLag();
+#endif
+
                             var consumeResult = consumer.Consume(availableTime);
 
                             // If no message was consumed during the available time, returns null
