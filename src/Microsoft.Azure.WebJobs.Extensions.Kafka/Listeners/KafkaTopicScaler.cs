@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Kafka
 
                     totalLag += diff;
 
-                    if (diff > highestPartitionLag)
+                    if (diff >= highestPartitionLag)
                     {
                         highestPartitionLag = diff;
                         partitionWithHighestLag = topicPartition.Partition;
